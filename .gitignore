@@ -32,8 +32,17 @@ backend/prisma/dev.db*
 .vscode/*
 !.vscode/extensions.json
 .idea/
+.claude/
 .DS_Store
 Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# pnpm
+.pnpm-store/
+
+# generated Prisma client
+backend/generated/
+backend/prisma/dev.db
+

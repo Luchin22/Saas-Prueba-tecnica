@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum LicenseStatus {
+  ACTIVE
+  REVOKED
+}
+
+model Company {
+  id           String           @id @default(uuid())
+  name         String
+  licenseLimit Int              @map("license_limit")
+  usageLimit   Int              @map("usage_limit")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  users        User[]
+  usageRecords ApiUsageRecord[]
+
+  @@map("companies")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         Role      @default(USER)
+  companyId    String    @map("company_id")
+  company      Company   @relation(fields: [companyId], references: [id])
+  license      License?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@map("users")
+}
+
+model License {
+  id         String        @id @default(uuid())
+  userId     String        @unique @map("user_id")
+  user       User          @relation(fields: [userId], references: [id])
+  companyId  String        @map("company_id")
+  status     LicenseStatus @default(ACTIVE)
+  assignedAt DateTime      @default(now()) @map("assigned_at")
+  revokedAt  DateTime?     @map("revoked_at")
+
+  @@index([companyId, status])
+  @@map("licenses")
+}
+
+model ApiUsageRecord {
+  id         String   @id @default(uuid())
+  companyId  String   @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id])
+  count      Int
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  @@index([companyId, recordedAt])
+  @@map("api_usage_records")
+}

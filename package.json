@@ -1,0 +1,26 @@
+{
+  "name": "saas-subscription-eval",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de gestión de suscripciones B2B (SaaS) — monorepo pnpm (backend NestJS + frontend Vue 3)",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "test": "pnpm -r test",
+    "test:cov": "pnpm -r test:cov",
+    "prisma:generate": "pnpm --filter backend prisma:generate",
+    "prisma:migrate:dev": "pnpm --filter backend prisma:migrate:dev",
+    "prisma:seed": "pnpm --filter backend prisma:seed"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}
