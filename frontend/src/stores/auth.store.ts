@@ -5,6 +5,7 @@ import * as authApi from '@/services/auth.api'
 import { setAuthToken } from '@/services/http'
 import { connectSocket, disconnectSocket } from '@/services/socket'
 import { useUsageStore } from './usage.store'
+import { useLicensesStore } from './licenses.store'
 
 const TOKEN_STORAGE_KEY = 'saas.auth.token'
 const USER_STORAGE_KEY = 'saas.auth.user'
@@ -54,6 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
   function connectRealtime(authToken: string): void {
     const socket = connectSocket(authToken)
     useUsageStore().attachRealtime(socket)
+    useLicensesStore().attachRealtime(socket)
   }
 
   return { token, user, isAuthenticated, role, restoreSession, login, logout }
