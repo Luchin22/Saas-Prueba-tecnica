@@ -23,6 +23,14 @@ function handleLogout(): void {
         >
           Dashboard
         </RouterLink>
+        <RouterLink
+          v-if="authStore.role === 'ADMIN'"
+          to="/licenses"
+          class="text-sm font-medium text-slate-600 hover:text-brand-600"
+          active-class="text-brand-600"
+        >
+          Licencias
+        </RouterLink>
       </div>
       <div class="flex items-center gap-4">
         <span class="text-sm text-slate-500">{{ authStore.user?.email }}</span>

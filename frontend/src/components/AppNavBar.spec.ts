@@ -13,6 +13,7 @@ function createTestRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/dashboard', name: 'dashboard', component: { template: '<div />' } },
+      { path: '/licenses', name: 'licenses', component: { template: '<div />' } },
       { path: '/login', name: 'login', component: { template: '<div />' } },
     ],
   })
@@ -23,21 +24,21 @@ describe('AppNavBar', () => {
     setActivePinia(createPinia())
   })
 
-  it('shows the current user email and a dashboard link', async () => {
+  it('hides the Licencias link for a non-admin user', async () => {
     const router = createTestRouter()
     await router.push('/dashboard')
     await router.isReady()
     const authStore = useAuthStore()
-    authStore.user = { id: 'u1', email: 'admin@acme.test', role: 'ADMIN', companyId: 'c1' }
+    authStore.user = { id: 'u1', email: 'employee@acme.test', role: 'USER', companyId: 'c1' }
     authStore.token = 'jwt'
 
     const wrapper = mount(AppNavBar, { global: { plugins: [router] } })
 
-    expect(wrapper.text()).toContain('admin@acme.test')
-    expect(wrapper.text()).toContain('Dashboard')
+    expect(wrapper.text()).toContain('employee@acme.test')
+    expect(wrapper.text()).not.toContain('Licencias')
   })
 
-  it('logs out and redirects to login on click', async () => {
+  it('shows the Licencias link for an admin user and logs out on click', async () => {
     const router = createTestRouter()
     await router.push('/dashboard')
     await router.isReady()
@@ -46,6 +47,8 @@ describe('AppNavBar', () => {
     authStore.token = 'jwt'
 
     const wrapper = mount(AppNavBar, { global: { plugins: [router] } })
+    expect(wrapper.text()).toContain('Licencias')
+
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
