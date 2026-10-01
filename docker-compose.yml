@@ -30,6 +30,12 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
+    # On a brand-new volume, Postgres's own init sequence briefly starts,
+    # stops, and restarts itself — pg_isready can report ready during that
+    # gap, so prisma migrate can hit a closed connection on the very first
+    # `docker compose up`. Retrying on failure recovers automatically instead
+    # of leaving the stack dead until someone notices and reruns `up`.
+    restart: on-failure:5
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -37,6 +43,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       JWT_EXPIRES_IN_SECONDS: '28800'
       USAGE_ALERT_THRESHOLD: '0.8'
+      LICENSE_ALERT_THRESHOLD: '0.8'
+      ALERT_CHECK_INTERVAL_MS: '15000'
       SMTP_HOST: mailhog
       SMTP_PORT: '1025'
       MAIL_FROM: alerts@saas-subscriptions.test
