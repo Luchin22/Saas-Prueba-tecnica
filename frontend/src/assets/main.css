@@ -1,14 +1,21 @@
 @import 'tailwindcss';
 
+/*
+ * Paleta extraída del logo de IMASD (fondo azul marino + acento cian):
+ * fondo dominante #081028, acento brillante #00c8f0/#00d2fa.
+ */
 @theme {
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e3a8a;
-  --color-brand-900: #172554;
+  --color-brand-50: #eafcff;
+  --color-brand-100: #d6f7ff;
+  --color-brand-200: #adeeff;
+  --color-brand-300: #6fe0fa;
+  --color-brand-400: #22c8ea;
+  --color-brand-500: #00b8e0;
+  --color-brand-600: #0096b4;
+  --color-brand-700: #0a6e8c;
+  --color-brand-800: #0d3a5c;
+  --color-brand-900: #0a1f42;
+  --color-brand-950: #081028;
 }
 
 body {
