@@ -40,15 +40,18 @@ No se necesita ningún paso manual adicional: la base de datos queda migrada y c
 
 La empresa demo "Acme Corp" tiene `licenseLimit: 5`, `usageLimit: 1000` y ya trae 10 días de historial de consumo simulado para que el gráfico del dashboard no se vea vacío en el primer arranque.
 
-### Desarrollo local sin Docker (opcional)
+### Modo desarrollo (opcional — la base de datos sigue en Docker)
+
+El comando de arriba (`docker compose up --build`) es la forma **requerida y principal** de levantar el sistema completo. Esta sección es solo una variante opcional para iterar más rápido mientras se desarrolla: en vez de reconstruir las imágenes de backend/frontend en cada cambio, se levanta **únicamente Postgres en Docker** y backend/frontend corren nativos con recarga en caliente. La base de datos nunca deja de correr en Docker.
 
 ```bash
+docker compose up postgres -d               # solo la base de datos, en Docker
 pnpm install
-cp backend/.env.example backend/.env       # editar DATABASE_URL si aplica
+cp backend/.env.example backend/.env        # DATABASE_URL ya apunta a localhost:5433 (el puerto publicado por Docker)
 cp frontend/.env.example frontend/.env
 pnpm --filter saas-subscription-backend prisma:migrate:dev
 pnpm --filter saas-subscription-backend prisma:seed
-pnpm dev   # backend en :3001 y frontend en :5173 en paralelo
+pnpm dev   # backend en :3001 y frontend en :5173 en paralelo, con recarga en caliente
 ```
 
 ### Pruebas
