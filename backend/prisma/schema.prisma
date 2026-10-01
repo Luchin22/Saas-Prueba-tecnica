@@ -17,13 +17,15 @@ enum LicenseStatus {
 }
 
 model Company {
-  id           String           @id @default(uuid())
-  name         String
-  licenseLimit Int              @map("license_limit")
-  usageLimit   Int              @map("usage_limit")
-  createdAt    DateTime         @default(now()) @map("created_at")
-  users        User[]
-  usageRecords ApiUsageRecord[]
+  id                 String           @id @default(uuid())
+  name               String
+  licenseLimit       Int              @map("license_limit")
+  usageLimit         Int              @map("usage_limit")
+  usageAlertSentAt   DateTime?        @map("usage_alert_sent_at")
+  licenseAlertSentAt DateTime?        @map("license_alert_sent_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  users              User[]
+  usageRecords       ApiUsageRecord[]
 
   @@map("companies")
 }

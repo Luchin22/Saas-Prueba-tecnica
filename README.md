@@ -11,7 +11,7 @@ y reciben alertas al superar el límite contratado.
 | Backend | NestJS 11 (TypeScript), Prisma 7 + PostgreSQL, JWT, Socket.IO |
 | Frontend | Vue 3 (Composition API, TypeScript), Pinia, Vue Router, Tailwind CSS v4, Chart.js, Socket.IO client |
 | Monorepo | pnpm workspaces |
-| Infraestructura | Docker Compose (PostgreSQL + backend + frontend) |
+| Infraestructura | Docker Compose (PostgreSQL + backend + frontend + Mailhog) |
 | Pruebas | Jest (unit + e2e, backend) y Vitest + Vue Test Utils (frontend), ambos con umbral de cobertura ≥80% |
 | CI | GitHub Actions — lint + tests en cada PR hacia `main` |
 
@@ -28,6 +28,7 @@ Esto levanta:
 - **PostgreSQL** en `localhost:5433` (healthcheck antes de continuar).
 - **Backend** en `http://localhost:3001` — al arrancar corre `prisma migrate deploy` y luego un seed **idempotente** (se puede reiniciar el contenedor sin duplicar datos).
 - **Frontend** en `http://localhost:5173`.
+- **Mailhog** (buzón de pruebas) en `http://localhost:8025` — ahí se ven los correos de alerta que manda el backend, sin necesitar una cuenta de email real.
 
 No se necesita ningún paso manual adicional: la base de datos queda migrada y con datos de demo listos para usar.
 
@@ -131,13 +132,14 @@ Ambigüedades del enunciado y cómo se resolvieron:
 
 1. **"Consumo de API en tiempo real" sin una API real que medir.** Se modela como una tabla de eventos incrementales (`ApiUsageRecord`) alimentada por `POST /api/v1/usage/simulate` (cualquier usuario autenticado puede dispararlo — en el dashboard hay un botón "Simular consumo de API" para demostrarlo en vivo). El "tiempo real" se resuelve empujando el nuevo agregado por WebSocket en vez de que el frontend haga *polling*.
 2. **Multi-tenancy.** Cada `User` pertenece a exactamente una `Company`. Un admin solo puede ver/gestionar usuarios y licencias de su propia empresa (filtrado siempre por el `companyId` del JWT, y por *room* a nivel de socket). No se soportan usuarios en múltiples empresas.
-3. **Qué constituye una "alerta".** Evento `usage:alert` por WebSocket cuando el consumo supera `USAGE_ALERT_THRESHOLD` (80% por defecto, configurable). Es una alerta de UI en esta prueba, sin sistema de notificaciones externas (email/Slack), por no estar solicitado explícitamente.
-4. **Límite de licencias vs. límite de consumo de API.** Son dos campos independientes en `Company` (`licenseLimit`, `usageLimit`): cuántos empleados pueden tener licencia vs. cuántas llamadas puede hacer la empresa, son dos dimensiones distintas del contrato B2B.
+3. **Qué constituye una "alerta" y a quién le llega.** El enunciado pide "emitir alertas" sin especificar canal. Se implementaron dos: (a) evento `usage:alert` por WebSocket al instante, visible en el dashboard mientras la pestaña esté abierta; (b) un **correo real** con plantilla HTML de marca (vía SMTP, capturado por Mailhog en `localhost:8025` para no depender de credenciales externas) al/los `ADMIN` de la empresa — no a cada empleado, porque el límite es del *contrato* de la empresa, no de un usuario individual. El correo lo envía `AlertsScheduler` (`@nestjs/schedule`, barre todas las empresas cada `ALERT_CHECK_INTERVAL_MS`, 15s por defecto) en vez de enviarse en línea dentro del request que cruza el umbral: así también detecta cruces que no vengan de una acción puntual, y usa un timestamp persistido por empresa (`usageAlertSentAt`/`licenseAlertSentAt`) para no reenviar mientras siga por encima, reseteándolo si vuelve a bajar del umbral.
+4. **Límite de licencias vs. límite de consumo de API.** Son dos campos independientes en `Company` (`licenseLimit`, `usageLimit`): cuántos empleados pueden tener licencia vs. cuántas llamadas puede hacer la empresa, son dos dimensiones distintas del contrato B2B. Ambas disparan su propia alerta (consumo y licencias) con el mismo mecanismo del punto 3.
 5. **Quién puede asignar licencias.** Solo `ADMIN`. `USER` solo consulta su propio consumo.
 6. **Gestión de empleados.** El enunciado no especifica un endpoint de alta de empleados, pero es un prerrequisito para poder demostrar `licenses/assign` con datos reales — se agregó `POST /api/v1/users` (solo ADMIN) además del seed con datos de demo.
 7. **Paginación de la tabla de licencias.** Client-side, dado el volumen esperable en una prueba técnica (decenas de empleados); en un escenario con miles se migraría a paginación server-side (`skip`/`take` en Prisma).
 8. **NestJS 11 en vez de 12.** NestJS 12 se distribuye como ESM-only, lo que rompe `ts-jest` en modo CommonJS sin una migración mayor de todo el proyecto a ESM. Se fijó la v11.x (última con soporte CJS completo) para mantener el setup de Jest existente.
 9. **Nombre del repositorio.** El enunciado pedía `saas-subscription-eval`; se documenta aquí por transparencia si el repositorio final tiene otro nombre.
+10. **Rate limiting en login.** Además del *throttle* global (100 req/min por IP en toda la API), `POST /api/v1/auth/login` tiene su propio límite más estricto (5 intentos/min por IP vía `@Throttle()`), por ser el endpoint más expuesto a fuerza bruta de contraseñas.
 
 ## Estrategia de Git
 
