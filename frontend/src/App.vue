@@ -7,9 +7,12 @@ const authStore = useAuthStore()
 
 <template>
   <div class="min-h-screen bg-slate-50">
-    <AppNavBar v-if="authStore.isAuthenticated" />
-    <main class="mx-auto max-w-6xl px-6 py-8">
-      <RouterView />
-    </main>
+    <template v-if="authStore.isAuthenticated">
+      <AppNavBar />
+      <main class="mx-auto max-w-6xl px-6 py-8">
+        <RouterView />
+      </main>
+    </template>
+    <RouterView v-else />
   </div>
 </template>
