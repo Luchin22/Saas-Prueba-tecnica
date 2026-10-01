@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CompaniesModule } from './companies/companies.module';
 import { LicensesModule } from './licenses/licenses.module';
+import { UsageModule } from './usage/usage.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -18,6 +19,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     UsersModule,
     CompaniesModule,
     LicensesModule,
+    UsageModule,
     RealtimeModule,
   ],
   providers: [
