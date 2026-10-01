@@ -61,4 +61,16 @@ describe('LoginView', () => {
     expect(wrapper.text()).toContain('No se pudo iniciar sesión')
     expect(router.currentRoute.value.name).toBe('login')
   })
+
+  it('fills the demo admin credentials when the hint button is clicked', async () => {
+    const router = createTestRouter()
+    await router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router] } })
+    await wrapper.find('button[type="button"]').trigger('click')
+
+    expect(wrapper.find('#email').element).toHaveProperty('value', 'admin@acme.test')
+    expect(wrapper.find('#password').element).toHaveProperty('value', 'Password123!')
+  })
 })

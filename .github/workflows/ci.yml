@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  PNPM_VERSION: 10
+
+jobs:
+  backend:
+    name: Backend (lint, unit + e2e tests, build)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: saas
+          POSTGRES_PASSWORD: saas
+          POSTGRES_DB: saas_subscriptions_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U saas -d saas_subscriptions_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://saas:saas@localhost:5432/saas_subscriptions_ci?schema=public
+      JWT_SECRET: ci-test-secret
+      JWT_EXPIRES_IN_SECONDS: '28800'
+      USAGE_ALERT_THRESHOLD: '0.8'
+      PORT: '3001'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter saas-subscription-backend lint
+
+      - name: Generate Prisma client
+        run: pnpm --filter saas-subscription-backend exec prisma generate
+
+      - name: Run database migrations
+        run: pnpm --filter saas-subscription-backend exec prisma migrate deploy
+
+      - name: Unit tests (with coverage)
+        run: pnpm --filter saas-subscription-backend test:cov
+
+      - name: E2E / integration tests
+        run: pnpm --filter saas-subscription-backend test:e2e
+
+      - name: Build
+        run: pnpm --filter saas-subscription-backend build
+
+  frontend:
+    name: Frontend (lint, unit tests, build)
+    runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: http://localhost:3001/api/v1
+      VITE_WS_URL: http://localhost:3001
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter frontend lint
+
+      - name: Unit tests (with coverage)
+        run: pnpm --filter frontend test:cov
+
+      - name: Build
+        run: pnpm --filter frontend build
