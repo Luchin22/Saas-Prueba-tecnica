@@ -1,0 +1,6 @@
+import { apiFetch } from './http'
+import type { LoginResponse } from '@/types/api'
+
+export function login(email: string, password: string): Promise<LoginResponse> {
+  return apiFetch<LoginResponse>('/auth/login', { method: 'POST', body: { email, password } })
+}
