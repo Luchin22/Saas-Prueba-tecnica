@@ -20,7 +20,8 @@ export class UsagePrismaRepository implements IUsageRepository {
 
   async findDailyHistory(companyId: string, days: number): Promise<DailyUsage[]> {
     const since = new Date();
-    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+    since.setDate(since.getDate() - (days - 1));
 
     const records = await this.prisma.apiUsageRecord.findMany({
       where: { companyId, recordedAt: { gte: since } },
@@ -34,6 +35,15 @@ export class UsagePrismaRepository implements IUsageRepository {
       buckets.set(key, (buckets.get(key) ?? 0) + record.count);
     }
 
-    return Array.from(buckets.entries()).map(([date, count]) => ({ date, count }));
+    // Zero-fill every day in the window, not just the ones with activity —
+    // otherwise a chart over this data can't draw a consistent 14-day trend
+    // line whenever usage is concentrated on a single day (e.g. right after a
+    // fresh seed, before historical data has accumulated).
+    return Array.from({ length: days }, (_, i) => {
+      const date = new Date(since);
+      date.setDate(since.getDate() + i);
+      const key = date.toISOString().slice(0, 10);
+      return { date: key, count: buckets.get(key) ?? 0 };
+    });
   }
 }
