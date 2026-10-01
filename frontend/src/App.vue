@@ -1,11 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useAuthStore } from '@/stores/auth.store'
+import AppNavBar from '@/components/AppNavBar.vue'
+
+const authStore = useAuthStore()
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div class="min-h-screen bg-slate-50">
+    <AppNavBar v-if="authStore.isAuthenticated" />
+    <main class="mx-auto max-w-6xl px-6 py-8">
+      <RouterView />
+    </main>
+  </div>
 </template>
-
-<style scoped></style>
