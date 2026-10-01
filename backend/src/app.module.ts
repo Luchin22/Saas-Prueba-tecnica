@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { LicensesModule } from './licenses/licenses.module';
 import { UsageModule } from './usage/usage.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { AlertsModule } from './alerts/alerts.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -24,6 +25,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     LicensesModule,
     UsageModule,
     RealtimeModule,
+    AlertsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

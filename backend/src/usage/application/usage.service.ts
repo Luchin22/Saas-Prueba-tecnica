@@ -26,11 +26,12 @@ export class UsageService {
 
   async simulateUsage(companyId: string, count: number): Promise<UsageSummary> {
     const company = await this.getCompanyOrThrow(companyId);
-    await this.usageRepository.createRecord(companyId, count);
 
+    await this.usageRepository.createRecord(companyId, count);
     const summary = await this.buildSummary(companyId, company.usageLimit);
 
     this.realtimeGateway.emitToCompany(companyId, 'usage:update', summary);
+
     if (summary.percentage >= summary.alertThreshold) {
       this.realtimeGateway.emitToCompany(companyId, 'usage:alert', {
         percentage: summary.percentage,
@@ -38,6 +39,10 @@ export class UsageService {
       });
     }
 
+    // Emailing admins is handled by AlertsScheduler, which sweeps all companies
+    // on an interval and persists an alert-sent flag — that way it also catches
+    // threshold crossings that don't go through this exact code path, and never
+    // double-sends while a company stays above the threshold.
     return summary;
   }
 

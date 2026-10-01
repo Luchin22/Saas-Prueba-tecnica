@@ -17,6 +17,8 @@ describe('UsageService', () => {
     name: 'Acme Corp',
     licenseLimit: 5,
     usageLimit: 1000,
+    usageAlertSentAt: null,
+    licenseAlertSentAt: null,
     createdAt: new Date(),
   };
 
@@ -26,7 +28,11 @@ describe('UsageService', () => {
       sumByCompany: jest.fn(),
       findDailyHistory: jest.fn().mockResolvedValue([]),
     };
-    companiesRepository = { findById: jest.fn() };
+    companiesRepository = {
+      findById: jest.fn().mockResolvedValue(company),
+      findAll: jest.fn(),
+      updateAlertState: jest.fn(),
+    };
     configService = {
       get: jest.fn().mockReturnValue('0.8'),
     } as unknown as jest.Mocked<ConfigService>;
@@ -45,7 +51,6 @@ describe('UsageService', () => {
   });
 
   it('getSummary computes the usage percentage against the contracted limit', async () => {
-    companiesRepository.findById.mockResolvedValue(company);
     usageRepository.sumByCompany.mockResolvedValue(400);
 
     const result = await service.getSummary('company-1');
@@ -60,7 +65,6 @@ describe('UsageService', () => {
   });
 
   it('simulateUsage records the call and always emits usage:update', async () => {
-    companiesRepository.findById.mockResolvedValue(company);
     usageRepository.sumByCompany.mockResolvedValue(200);
 
     await service.simulateUsage('company-1', 20);
@@ -74,10 +78,9 @@ describe('UsageService', () => {
   });
 
   it('simulateUsage emits usage:alert once the threshold is crossed', async () => {
-    companiesRepository.findById.mockResolvedValue(company);
     usageRepository.sumByCompany.mockResolvedValue(850);
 
-    await service.simulateUsage('company-1', 50);
+    await service.simulateUsage('company-1', 100);
 
     expect(realtimeGateway.emitToCompany).toHaveBeenCalledWith(
       'company-1',
@@ -87,7 +90,6 @@ describe('UsageService', () => {
   });
 
   it('simulateUsage does not emit usage:alert below the threshold', async () => {
-    companiesRepository.findById.mockResolvedValue(company);
     usageRepository.sumByCompany.mockResolvedValue(100);
 
     await service.simulateUsage('company-1', 10);

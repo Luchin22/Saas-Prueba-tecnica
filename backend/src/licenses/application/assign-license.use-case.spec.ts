@@ -25,6 +25,8 @@ describe('AssignLicenseUseCase', () => {
     name: 'Acme Corp',
     licenseLimit: 5,
     usageLimit: 1000,
+    usageAlertSentAt: null,
+    licenseAlertSentAt: null,
     createdAt: new Date(),
   };
 
@@ -40,7 +42,11 @@ describe('AssignLicenseUseCase', () => {
       findManyByCompanyWithLicenseStatus: jest.fn(),
       create: jest.fn(),
     };
-    companiesRepository = { findById: jest.fn() };
+    companiesRepository = {
+      findById: jest.fn(),
+      findAll: jest.fn(),
+      updateAlertState: jest.fn(),
+    };
     useCase = new AssignLicenseUseCase(licensesRepository, usersRepository, companiesRepository);
   });
 

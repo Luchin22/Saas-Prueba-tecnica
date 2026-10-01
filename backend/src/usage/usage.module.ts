@@ -10,5 +10,6 @@ import { RealtimeModule } from '../realtime/realtime.module';
   imports: [CompaniesModule, RealtimeModule],
   controllers: [UsageController],
   providers: [UsageService, { provide: USAGE_REPOSITORY, useClass: UsagePrismaRepository }],
+  exports: [USAGE_REPOSITORY],
 })
 export class UsageModule {}
