@@ -51,4 +51,16 @@ describe('Auth (e2e)', () => {
   it('rejects requests without a bearer token', async () => {
     await request(app.getHttpServer()).get('/api/v1/usage').expect(401);
   });
+
+  it('throttles repeated login attempts from the same client', async () => {
+    const statuses: number[] = [];
+    for (let i = 0; i < 10; i += 1) {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: fixture.adminEmail, password: 'wrong-password' });
+      statuses.push(response.status);
+    }
+
+    expect(statuses.some((status) => status === 429)).toBe(true);
+  });
 });
