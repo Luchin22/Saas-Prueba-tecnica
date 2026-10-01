@@ -1,0 +1,342 @@
+{
+  "info": {
+    "_postman_id": "4b4c16c5-6ffa-4ee8-9ed1-cbbf63db29b5",
+    "name": "SaaS Subscription Eval",
+    "description": "Colección para probar la API de gestión de suscripciones B2B (NestJS).\n\n**Antes de usarla**: levanta el backend (`docker compose up --build` desde la raíz del repo, o `pnpm dev`) y corre las peticiones en el orden de las carpetas: Auth → Usage → Users → Licenses.\n\nLa variable de colección `baseUrl` ya apunta al puerto publicado por Docker (`http://localhost:3001/api/v1`). El request **Login (Admin)** guarda el token automáticamente en `accessToken`; el resto de los requests lo usan vía Bearer Auth a nivel de colección, así que no hay que copiar/pegar nada a mano.\n\nCredenciales de demo (creadas por el seed): `admin@acme.test` / `Password123!` (ADMIN), `employee1@acme.test` … `employee4@acme.test` / `Password123!` (USER).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001/api/v1", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "employeeAccessToken", "value": "", "type": "string" },
+    { "key": "createdUserId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Returns an access token', () => pm.expect(body.accessToken).to.be.a('string'));",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@acme.test\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Devuelve el JWT del admin de la empresa demo \"Acme Corp\". El script de test de este request guarda el token en la variable de colección `accessToken`, usada por Bearer Auth en el resto de los requests."
+          }
+        },
+        {
+          "name": "Login (Employee)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('employeeAccessToken', body.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"employee1@acme.test\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login con un usuario USER (no admin). Útil para probar el request \"Assign License (as USER, expects 403)\"."
+          }
+        },
+        {
+          "name": "Login (Invalid Password, expects 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@acme.test\",\n  \"password\": \"wrong-password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usage",
+      "item": [
+        {
+          "name": "Get Usage Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/usage",
+              "host": ["{{baseUrl}}"],
+              "path": ["usage"]
+            },
+            "description": "Consumo agregado de la empresa del usuario autenticado: total de llamadas, límite contratado, porcentaje y el historial diario usado para el gráfico del dashboard."
+          }
+        },
+        {
+          "name": "Simulate API Usage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('totalCalls increased', () => pm.expect(body.totalCalls).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"count\": 25\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usage/simulate",
+              "host": ["{{baseUrl}}"],
+              "path": ["usage", "simulate"]
+            },
+            "description": "No hay una API externa real que medir, así que este endpoint simula tráfico: inserta un registro de consumo y retorna el nuevo agregado. También empuja un evento `usage:update` (y `usage:alert` si se cruza el umbral) por WebSocket a los clientes conectados de la empresa. `count` es opcional — si se omite, el backend genera un valor aleatorio entre 1 y 50."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Company Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "description": "Solo ADMIN. Lista los usuarios de la propia empresa, cada uno con `hasActiveLicense`."
+          }
+        },
+        {
+          "name": "Create Employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('createdUserId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"postman-demo-{{$timestamp}}@acme.test\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            },
+            "description": "Solo ADMIN. Crea un empleado (rol USER) en la empresa del admin autenticado. El email usa `{{$timestamp}}` (variable dinámica de Postman) para no chocar con un email ya existente si se corre la colección varias veces. El id del usuario creado se guarda en `createdUserId` para usarlo en \"Assign License\"."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Licenses",
+      "item": [
+        {
+          "name": "List Active Licenses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status is 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/licenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["licenses"]
+            },
+            "description": "Solo ADMIN. Licencias activas de la empresa."
+          }
+        },
+        {
+          "name": "Assign License to Created Employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('License is ACTIVE', () => pm.expect(body.status).to.eql('ACTIVE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{createdUserId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/licenses/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["licenses", "assign"]
+            },
+            "description": "Solo ADMIN. Corre después de \"Create Employee\" (usa el `createdUserId` que ese request guardó). Valida que el usuario pertenezca a la misma empresa y que no se supere el `licenseLimit` contratado."
+          }
+        },
+        {
+          "name": "Assign License Again (expects 409 Conflict)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 409 (already has an active license)', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{createdUserId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/licenses/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["licenses", "assign"]
+            },
+            "description": "Reintenta asignar una licencia al mismo usuario del request anterior. Demuestra la regla de negocio: un usuario no puede tener dos licencias activas."
+          }
+        },
+        {
+          "name": "Assign License (as USER, expects 403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 403 (USER cannot assign licenses)', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{employeeAccessToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{createdUserId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/licenses/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["licenses", "assign"]
+            },
+            "description": "Corre \"Login (Employee)\" primero. Demuestra el RolesGuard: un USER no puede asignar licencias, solo un ADMIN."
+          }
+        }
+      ]
+    }
+  ]
+}

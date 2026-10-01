@@ -62,6 +62,10 @@ pnpm --filter saas-subscription-backend test:e2e    # integración contra Postgr
 pnpm --filter frontend test:cov                     # unitarias, frontend
 ```
 
+### Colección de Postman
+
+[`postman/SaaS-Subscription-Eval.postman_collection.json`](postman/SaaS-Subscription-Eval.postman_collection.json) — impórtala en Postman y corre las carpetas en orden (Auth → Usage → Users → Licenses). El login guarda el token automáticamente (no hay que copiar/pegar nada), y la colección incluye casos negativos (401, 403, 409) además del flujo feliz. Validada con `newman run postman/SaaS-Subscription-Eval.postman_collection.json` contra el backend real: 11 requests, 14 assertions, 0 fallos.
+
 ## Arquitectura
 
 ### Monorepo
